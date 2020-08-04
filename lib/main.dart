@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uber_clone/layouts/Home.dart';
+import 'package:uber_clone/routes/Routes.dart';
 import 'package:uber_clone/themes/ThemePadrao.dart';
 
 void main() {
@@ -8,5 +9,7 @@ void main() {
     home: Home(),
     debugShowCheckedModeBanner: false,
     theme: temaPadrao,
+    initialRoute: '/',
+    onGenerateRoute: Rotas.geraRotas,
   ));
 }

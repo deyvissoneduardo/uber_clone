@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:uber_clone/layouts/Cadastro.dart';
+import 'package:uber_clone/routes/Routes.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -82,9 +83,7 @@ class _HomeState extends State<Home> {
                       style: TextStyle(color: Colors.white),
                     ),
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => Cadastro()
-                      ));
+                      Navigator.pushNamed(context, Rotas.ROTA_CADASTRO);
                     },
                   ),
                 ),
