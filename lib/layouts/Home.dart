@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:uber_clone/layouts/Cadastro.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -80,7 +81,11 @@ class _HomeState extends State<Home> {
                       'Não tem conta? Cadastre-se',
                       style: TextStyle(color: Colors.white),
                     ),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(
+                          builder: (context) => Cadastro()
+                      ));
+                    },
                   ),
                 ),
                 /** msngs de error **/
