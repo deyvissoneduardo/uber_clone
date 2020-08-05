@@ -87,6 +87,9 @@ class _CadastroState extends State<Cadastro> {
               context, Rotas.ROTA_PASSAGEIRO, (_) => false);
           break;
       }
+    }).catchError((error) {
+      _mensaemError =
+          'Error ao autenticar, verifique os dados e tente novamente';
     });
   }
 

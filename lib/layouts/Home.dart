@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:uber_clone/layouts/Cadastro.dart';
+import 'package:uber_clone/model/Usuario.dart';
 import 'package:uber_clone/routes/Routes.dart';
 
 class Home extends StatefulWidget {
@@ -12,6 +14,53 @@ class _HomeState extends State<Home> {
   /** controladores **/
   TextEditingController _controllerEmail = TextEditingController();
   TextEditingController _controllerSenha = TextEditingController();
+
+  /** instancias do firebase **/
+  FirebaseAuth auth = FirebaseAuth.instance;
+
+
+  /** inicia mensagem de error **/
+  String _mensaemError = "";
+
+  /** valida os campos antes de salvar **/
+  _validarCampos() {
+    /** recupera dados dos campos **/
+    String emial = _controllerEmail.text;
+    String senha = _controllerSenha.text;
+
+    /** verifica os campos **/
+    if (emial.isNotEmpty && emial.contains("@")) {
+      if (senha.isNotEmpty && senha.length > 6) {
+        /** usa model usuario para logar **/
+        Usuario usuario = Usuario();
+        usuario.email = emial;
+        usuario.senha = senha;
+        /** logar o usuario **/
+        _logarUsuario(usuario);
+      } else {
+        setState(() {
+          _mensaemError = 'Senha deve conter no minino 7 caracteres';
+        });
+      }
+    } else {
+      setState(() {
+        _mensaemError = 'Preencha com e-mail valido';
+      });
+    }
+  }
+
+  /** logar usuario **/
+  _logarUsuario(Usuario usuario) {
+    auth
+        .signInWithEmailAndPassword(
+            email: usuario.email, password: usuario.senha)
+        .then((firebaseUser) {
+      Navigator.pushReplacementNamed(context, Rotas.ROTA_PASSAGEIRO);
+    }).catchError((error) {
+      _mensaemError =
+          'Error ao autenticar, verifique os dados e tente novamente';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,19 +121,24 @@ class _HomeState extends State<Home> {
                     ),
                     color: Color(0xff1ebbd8),
                     padding: EdgeInsets.fromLTRB(32, 16, 32, 16),
-                    onPressed: () {},
+                    onPressed: () {
+                      _validarCampos();
+                    },
                   ),
                 ),
                 /** nao tem conta **/
-                Center(
-                  child: GestureDetector(
-                    child: Text(
-                      'Não tem conta? Cadastre-se',
-                      style: TextStyle(color: Colors.white),
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Center(
+                    child: GestureDetector(
+                      child: Text(
+                        'Não tem conta? Cadastre-se',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onTap: () {
+                        Navigator.pushNamed(context, Rotas.ROTA_CADASTRO);
+                      },
                     ),
-                    onTap: () {
-                      Navigator.pushNamed(context, Rotas.ROTA_CADASTRO);
-                    },
                   ),
                 ),
                 /** msngs de error **/
@@ -92,7 +146,7 @@ class _HomeState extends State<Home> {
                   padding: EdgeInsets.only(top: 16),
                   child: Center(
                     child: Text(
-                      'Error',
+                      _mensaemError,
                       style: TextStyle(color: Colors.red, fontSize: 20),
                     ),
                   ),
