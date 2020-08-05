@@ -9,7 +9,7 @@ void main() {
     home: Home(),
     debugShowCheckedModeBanner: false,
     theme: temaPadrao,
-    initialRoute: '/',
+    initialRoute: Rotas.ROTA_HOME,
     onGenerateRoute: Rotas.geraRotas,
   ));
 }
