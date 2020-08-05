@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:uber_clone/layouts/Cadastro.dart';
 import 'package:uber_clone/model/Usuario.dart';
 import 'package:uber_clone/routes/Routes.dart';
+import 'package:uber_clone/utils/FirebaseCollections.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -15,9 +17,12 @@ class _HomeState extends State<Home> {
   TextEditingController _controllerEmail = TextEditingController();
   TextEditingController _controllerSenha = TextEditingController();
 
+  /** icon carregando **/
+  bool _carregando = false;
+
   /** instancias do firebase **/
   FirebaseAuth auth = FirebaseAuth.instance;
-
+  Firestore banco = Firestore.instance;
 
   /** inicia mensagem de error **/
   String _mensaemError = "";
@@ -51,16 +56,62 @@ class _HomeState extends State<Home> {
 
   /** logar usuario **/
   _logarUsuario(Usuario usuario) {
+
+    setState(() {
+      _carregando = true;
+    });
+
     auth
         .signInWithEmailAndPassword(
             email: usuario.email, password: usuario.senha)
         .then((firebaseUser) {
-      Navigator.pushReplacementNamed(context, Rotas.ROTA_PASSAGEIRO);
+      _redirecionarPainelPorTipoUsuario(firebaseUser.user.uid);
     }).catchError((error) {
       _mensaemError =
           'Error ao autenticar, verifique os dados e tente novamente';
     });
   }
+
+  /** redireciona por usuario **/
+  _redirecionarPainelPorTipoUsuario(String idUsuario) async {
+    /** realiza uma unica consulta **/
+    DocumentSnapshot snapshot = await banco
+        .collection(FirebaseCollection.COLECAO_USUARIO)
+        .document(idUsuario)
+        .get();
+
+    /** recupera dados da consulta **/
+    Map<String, dynamic> dados = snapshot.data;
+    String tipoUsuario = dados[FirebaseCollection.DOC_TIPOUSUARIO];
+
+    setState(() {
+      _carregando = false;
+    });
+
+    /**chama proxima tela de acordo com usuario **/
+    switch (tipoUsuario) {
+      case 'motorista':
+        Navigator.pushReplacementNamed(context, Rotas.ROTA_MOTORISTA);
+        break;
+      case 'passageiro':
+        Navigator.pushReplacementNamed(context, Rotas.ROTA_PASSAGEIRO);
+        break;
+    }
+
+    _verificaUsuarioLogado() async{
+
+      FirebaseUser usuarioLogado = await auth.currentUser();
+      if ( usuarioLogado != null){
+        String idUsuario = usuarioLogado.uid;
+        _redirecionarPainelPorTipoUsuario(idUsuario);
+      }
+    }
+
+    @override
+    void initState() {
+      super.initState();
+      _verificaUsuarioLogado();
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +192,14 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                 ),
+                /** carregando **/
+                _carregando
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          backgroundColor: Colors.white,
+                        ),
+                      )
+                    : Container(),
                 /** msngs de error **/
                 Padding(
                   padding: EdgeInsets.only(top: 16),
