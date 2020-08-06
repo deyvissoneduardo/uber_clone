@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:uber_clone/routes/Routes.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 
 class PainelPassageiro extends StatefulWidget {
   @override
@@ -41,6 +42,50 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
     _controllerMap.complete(controller);
   }
 
+  /** recupera ultima localizacao valida **/
+  _recuperaUltimaLocalizacaoConhecida() async {
+    Position position = await Geolocator()
+        .getLastKnownPosition(desiredAccuracy: LocationAccuracy.high);
+
+    /** verfica se a localizacao e valida **/
+    setState(() {
+      if (position != null) {
+        _cameraPosition = CameraPosition(
+            target: LatLng(position.latitude, position.longitude), zoom: 19);
+      }
+      _movimentaCamera(_cameraPosition);
+    });
+  }
+
+  /** movimenta camera de acordo com a posicao **/
+  _movimentaCamera(CameraPosition cameraPosition) async {
+    GoogleMapController googleMapController = await _controllerMap.future;
+    googleMapController
+        .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+  }
+
+  /** monitora posicao do usuario em movimento **/
+  _adicionarListernerLocalizacao() {
+    var geolocator = Geolocator();
+    var locationOptions =
+        LocationOptions(accuracy: LocationAccuracy.high, distanceFilter: 10);
+
+    /** retorna a posicao atual **/
+    geolocator.getPositionStream(locationOptions).listen((Position position) {
+      _cameraPosition = CameraPosition(
+          target: LatLng(position.latitude, position.longitude), zoom: 19);
+      _movimentaCamera(_cameraPosition);
+    });
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _recuperaUltimaLocalizacaoConhecida();
+    _adicionarListernerLocalizacao();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,6 +110,8 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
           mapType: MapType.normal,
           initialCameraPosition: _cameraPosition,
           onMapCreated: _onMapCreated,
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false,
         ),
       ),
     );
