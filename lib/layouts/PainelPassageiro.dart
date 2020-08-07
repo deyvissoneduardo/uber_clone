@@ -1,13 +1,19 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:uber_clone/model/Destino.dart';
+import 'package:uber_clone/model/Requisicao.dart';
+import 'package:uber_clone/model/Usuario.dart';
 import 'package:uber_clone/routes/Routes.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
+import 'package:uber_clone/utils/FirebaseCollections.dart';
+import 'package:uber_clone/utils/StatusRequisicao.dart';
+import 'package:uber_clone/utils/UsuarioFirebase.dart';
 
 class PainelPassageiro extends StatefulWidget {
   @override
@@ -16,8 +22,7 @@ class PainelPassageiro extends StatefulWidget {
 
 class _PainelPassageiroState extends State<PainelPassageiro> {
   /** controladores de texto **/
-  TextEditingController _controllerDestino =
-      TextEditingController(text: 'av.paulita, 807');
+  TextEditingController _controllerDestino = TextEditingController();
 
   /** controlador do mapa **/
   Completer<GoogleMapController> _controllerMap = Completer();
@@ -35,6 +40,7 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
 
   /** instancias do firebase **/
   FirebaseAuth auth = FirebaseAuth.instance;
+  Firestore banco = Firestore.instance;
 
   /** intens de menu **/
   _escolhaMenuItem(String escolha) {
@@ -129,14 +135,14 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
         destino.cep = endereco.postalCode;
         destino.bairro = endereco.subLocality;
         destino.rua = endereco.thoroughfare;
-        destino.rua = endereco.subThoroughfare;
+        destino.numero = endereco.subThoroughfare;
         destino.latitude = endereco.position.latitude;
         destino.longitude = endereco.position.longitude;
 
         /** monta mensagem de confirmacao **/
         String enderecoConfirmacao;
         enderecoConfirmacao = '\n Cidade: ' + destino.cidade;
-        enderecoConfirmacao += "\n Rua: " + destino.rua;
+        enderecoConfirmacao += "\n Rua: " + destino.rua + ', ' + destino.numero;
         enderecoConfirmacao += '\n Bairro: ' + destino.bairro;
         enderecoConfirmacao += '\n Cep: ' + destino.cep;
 
@@ -160,6 +166,7 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
                   FlatButton(
                       onPressed: () {
                         /** salvar requisicao **/
+                        _salvarRequisicao(destino);
                         Navigator.pop(context);
                       },
                       child: Text(
@@ -171,6 +178,23 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
             });
       }
     }
+  }
+
+  /** salva dados da requisicao no firebase **/
+  _salvarRequisicao(Destino destino) async {
+    /** pega dados do usuario **/
+    Usuario passageiro = await UsuarioFirebse.getDadosUsuarioLogado();
+
+    /** monta requisicao de acordo com a model **/
+    Requisicao requisicao = Requisicao();
+    requisicao.destino = destino;
+    requisicao.passageiro = passageiro;
+    requisicao.status = StatusRequisicao.AGUARDANDO;
+
+    /** salva no firebase **/
+    banco
+        .collection(FirebaseCollection.COLECAO_REQUISICOES)
+        .add(requisicao.toMap());
   }
 
   @override
