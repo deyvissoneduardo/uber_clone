@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uber_clone/model/Destino.dart';
 import 'package:uber_clone/model/Usuario.dart';
+import 'package:uber_clone/utils/FirebaseCollections.dart';
 
 class Requisicao {
   /** atributos **/
@@ -10,7 +12,12 @@ class Requisicao {
   Destino _destino;
 
   /** construtor **/
-  Requisicao();
+  Requisicao() {
+    Firestore banco = Firestore.instance;
+    DocumentReference reference =
+        banco.collection(FirebaseCollection.COLECAO_REQUISICOES).document();
+    this.id = reference.documentID;
+  }
 
   /** cria ToMap para salvar no firebase **/
   Map<String, dynamic> toMap() {
@@ -34,6 +41,7 @@ class Requisicao {
 
     /** map da requisicao **/
     Map<String, dynamic> dadosRequisicao = {
+      "id": this.id,
       "status": this.status,
       "passageiro": dadosPassageiro,
       "motorista": null,
