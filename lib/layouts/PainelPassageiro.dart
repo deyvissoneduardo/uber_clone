@@ -21,6 +21,9 @@ class PainelPassageiro extends StatefulWidget {
 }
 
 class _PainelPassageiroState extends State<PainelPassageiro> {
+  /** carrega id da requisicao da viagem **/
+  String _idRequisicao;
+
   /** controladores de texto **/
   TextEditingController _controllerDestino = TextEditingController();
 
@@ -187,7 +190,22 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
   }
 
   /** metodo de cancelar viagem **/
-  _cancelarUber() {}
+  _cancelarUber() async {
+    /** pega id usuario atual **/
+    FirebaseUser firebaseUser = await UsuarioFirebse.getUsuarioAtual();
+    banco
+        .collection(FirebaseCollection.COLECAO_REQUISICOES)
+        .document(_idRequisicao)
+        .updateData({
+      FirebaseCollection.DOC_STATUS: StatusRequisicao.CANCELADA
+    }).then((_) {
+      /** remove a ultima requisicao ativa **/
+      banco
+          .collection(FirebaseCollection.COLECAO_REQUISICAO_ATIVA)
+          .document(firebaseUser.uid)
+          .delete();
+    });
+  }
 
   /** salva dados da requisicao no firebase **/
   _salvarRequisicao(Destino destino) async {
@@ -255,7 +273,7 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
       if (snapshots.data != null) {
         Map<String, dynamic> dados = snapshots.data;
         String status = dados[FirebaseCollection.DOC_STATUS];
-        String idRequisicao = dados[FirebaseCollection.DOC_ID_REQUISICAO];
+        _idRequisicao = dados[FirebaseCollection.DOC_ID_REQUISICAO];
 
         switch (status) {
           case StatusRequisicao.AGUARDANDO:
