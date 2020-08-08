@@ -72,7 +72,7 @@ class _PainelMotoristaState extends State<PainelMotorista> {
 
     var mensagemDados = Center(
       child: Text(
-        "Voçẽ não tem viagens",
+        "Você não tem viagens",
         style: TextStyle(
             fontWeight: FontWeight.bold, fontSize: 18, color: Colors.red),
       ),
