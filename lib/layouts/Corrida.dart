@@ -41,7 +41,7 @@ class _CorridaState extends State<Corrida> {
 
   /** inica camera do mapa **/
   CameraPosition _cameraPosition =
-  CameraPosition(target: LatLng(-15.904634, -47.773108), zoom: 19);
+      CameraPosition(target: LatLng(-15.904634, -47.773108), zoom: 19);
 
   /** controlador do mapa **/
   Completer<GoogleMapController> _controllerMap = Completer();
@@ -63,7 +63,7 @@ class _CorridaState extends State<Corrida> {
         _cameraPosition = CameraPosition(
             target: LatLng(position.latitude, position.longitude), zoom: 19);
       }
-      _movimentaCamera(_cameraPosition);
+      // _movimentaCamera(_cameraPosition);
       _localMotorista = position;
     });
   }
@@ -79,14 +79,14 @@ class _CorridaState extends State<Corrida> {
   _adicionarListernerLocalizacao() {
     var geolocator = Geolocator();
     var locationOptions =
-    LocationOptions(accuracy: LocationAccuracy.high, distanceFilter: 10);
+        LocationOptions(accuracy: LocationAccuracy.high, distanceFilter: 10);
 
     /** retorna a posicao atual **/
     geolocator.getPositionStream(locationOptions).listen((Position position) {
       _exibirMarcadorPassageiro(position);
       _cameraPosition = CameraPosition(
           target: LatLng(position.latitude, position.longitude), zoom: 19);
-      _movimentaCamera(_cameraPosition);
+      //  _movimentaCamera(_cameraPosition);
       setState(() {
         _localMotorista = position;
       });
@@ -96,13 +96,11 @@ class _CorridaState extends State<Corrida> {
   /** marca local do passageiro **/
   _exibirMarcadorPassageiro(Position local) async {
     /** recupera pixel do dispositivo **/
-    double pixelRadio = MediaQuery
-        .of(context)
-        .devicePixelRatio;
+    double pixelRadio = MediaQuery.of(context).devicePixelRatio;
 
     BitmapDescriptor.fromAssetImage(
-        ImageConfiguration(devicePixelRatio: pixelRadio),
-        'images/motorista.png')
+            ImageConfiguration(devicePixelRatio: pixelRadio),
+            'images/motorista.png')
         .then((BitmapDescriptor icone) {
       Marker marcadorPassageiro = Marker(
           markerId: MarkerId(_idMarkerMotorista),
@@ -173,8 +171,83 @@ class _CorridaState extends State<Corrida> {
   }
 
   _statusACaminho() {
-    _alterarBotaoPrincipal(
-        'A Caminho do Passageiro', Colors.green, null);
+    _alterarBotaoPrincipal('A Caminho do Passageiro', Colors.green, null);
+    /** exibir local do passageiro e motorista na tela do motorista **/
+    double latitudePassageiro =
+        _dadosRequisicao[FirebaseCollection.NO_PASSAGEIRO]
+            [FirebaseCollection.DOC_LATITUDE];
+    double longitudePassageiro =
+        _dadosRequisicao[FirebaseCollection.NO_PASSAGEIRO]
+            [FirebaseCollection.DOC_LONGITUDE];
+
+    /** local motorista **/
+    double latitudeMotorista = _dadosRequisicao[FirebaseCollection.NO_MOTORISTA]
+        [FirebaseCollection.DOC_LATITUDE];
+    double longitudeMotorista =
+        _dadosRequisicao[FirebaseCollection.NO_MOTORISTA]
+            [FirebaseCollection.DOC_LONGITUDE];
+
+    _exibirDoisMarcadores(LatLng(latitudeMotorista, longitudeMotorista),
+        LatLng(latitudePassageiro, longitudePassageiro));
+    /**  'southwest.latitude <= northeast.latitude': is not true. **/
+    var nLat, nLon, sLat, sLon;
+    if (latitudeMotorista <= latitudePassageiro) {
+      sLat = latitudeMotorista;
+      nLat = latitudePassageiro;
+    } else {
+      sLat = latitudePassageiro;
+      nLat = latitudeMotorista;
+    }
+    if (longitudeMotorista <= longitudePassageiro) {
+      sLon = longitudeMotorista;
+      nLon = longitudePassageiro;
+    } else {
+      sLon = longitudePassageiro;
+      nLon = longitudeMotorista;
+    }
+    _movimentaCameraBounds(LatLngBounds(
+        northeast: LatLng(nLat, nLon), southwest: LatLng(sLat, sLon)));
+  }
+
+  _exibirDoisMarcadores(LatLng latLngMotorista, LatLng latLngPassageiro) {
+    /** recupera pixel do dispositivo **/
+    double pixelRadio = MediaQuery.of(context).devicePixelRatio;
+    Set<Marker> _listaMarcadores = {};
+    /** motorista **/
+    BitmapDescriptor.fromAssetImage(
+            ImageConfiguration(devicePixelRatio: pixelRadio),
+            'images/motorista.png')
+        .then((BitmapDescriptor icone) {
+      Marker marcadorMotorista = Marker(
+          markerId: MarkerId(_idMarkerMotorista),
+          position: LatLng(latLngMotorista.latitude, latLngMotorista.longitude),
+          infoWindow: InfoWindow(title: 'Local Motorista'),
+          icon: icone);
+      _listaMarcadores.add(marcadorMotorista);
+    });
+    /** passageiro **/
+    BitmapDescriptor.fromAssetImage(
+            ImageConfiguration(devicePixelRatio: pixelRadio),
+            'images/passageiro.png')
+        .then((BitmapDescriptor icone) {
+      Marker marcadorPassageiro = Marker(
+          markerId: MarkerId(_idMarkerMotorista),
+          position:
+              LatLng(latLngPassageiro.latitude, latLngPassageiro.longitude),
+          infoWindow: InfoWindow(title: 'Local Passageiro'),
+          icon: icone);
+      _listaMarcadores.add(marcadorPassageiro);
+    });
+    setState(() {
+      _marcadores = _listaMarcadores;
+    });
+  }
+
+  _movimentaCameraBounds(LatLngBounds latLngBounds) async {
+    GoogleMapController googleMapController = await _controllerMap.future;
+
+    googleMapController
+        .animateCamera(CameraUpdate.newLatLngBounds(latLngBounds, 100));
   }
 
   _aceitarCorrida() async {
@@ -194,12 +267,12 @@ class _CorridaState extends State<Corrida> {
     }).then((_) {
       /** atulizar requisicao ativa **/
       String idPassageiro = _dadosRequisicao[FirebaseCollection.NO_PASSAGEIRO]
-      [FirebaseCollection.DOC_ID_USUARIO];
+          [FirebaseCollection.DOC_ID_USUARIO];
       _banco
           .collection(FirebaseCollection.COLECAO_REQUISICAO_ATIVA)
           .document(idPassageiro)
           .updateData(
-          {FirebaseCollection.DOC_STATUS: StatusRequisicao.A_CAMINHO});
+              {FirebaseCollection.DOC_STATUS: StatusRequisicao.A_CAMINHO});
       /** salvar requisicao ativa para motorista **/
       String idMotorista = motorista.idUsuario;
       _banco
@@ -228,35 +301,35 @@ class _CorridaState extends State<Corrida> {
       appBar: AppBar(title: Text("Painel Corrida")),
       body: Container(
           child: Stack(
-            children: <Widget>[
-              GoogleMap(
-                mapType: MapType.normal,
-                initialCameraPosition: _cameraPosition,
-                onMapCreated: _onMapCreated,
-                // myLocationEnabled: true,
-                markers: _marcadores,
-                myLocationButtonEnabled: false,
-              ),
-              Positioned(
-                /** btn chama uber **/
-                  right: 0,
-                  left: 0,
-                  bottom: 0,
-                  child: Padding(
-                    padding: Platform.isIOS
-                        ? EdgeInsets.fromLTRB(20, 10, 20, 25)
-                        : EdgeInsets.all(10),
-                    child: RaisedButton(
-                        child: Text(
-                          _textoBotao,
-                          style: TextStyle(color: Colors.white, fontSize: 20),
-                        ),
-                        color: _corBotao,
-                        padding: EdgeInsets.fromLTRB(32, 16, 32, 16),
-                        onPressed: _functionBotao),
-                  )),
-            ],
-          )),
+        children: <Widget>[
+          GoogleMap(
+            mapType: MapType.normal,
+            initialCameraPosition: _cameraPosition,
+            onMapCreated: _onMapCreated,
+            // myLocationEnabled: true,
+            markers: _marcadores,
+            myLocationButtonEnabled: false,
+          ),
+          Positioned(
+              /** btn chama uber **/
+              right: 0,
+              left: 0,
+              bottom: 0,
+              child: Padding(
+                padding: Platform.isIOS
+                    ? EdgeInsets.fromLTRB(20, 10, 20, 25)
+                    : EdgeInsets.all(10),
+                child: RaisedButton(
+                    child: Text(
+                      _textoBotao,
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    ),
+                    color: _corBotao,
+                    padding: EdgeInsets.fromLTRB(32, 16, 32, 16),
+                    onPressed: _functionBotao),
+              )),
+        ],
+      )),
     );
   }
 }

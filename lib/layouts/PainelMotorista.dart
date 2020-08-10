@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uber_clone/model/Usuario.dart';
 import 'package:uber_clone/routes/Routes.dart';
 import 'package:uber_clone/utils/FirebaseCollections.dart';
 import 'package:uber_clone/utils/StatusRequisicao.dart';
+import 'package:uber_clone/utils/UsuarioFirebase.dart';
 
 class PainelMotorista extends StatefulWidget {
   @override
@@ -51,11 +53,35 @@ class _PainelMotoristaState extends State<PainelMotorista> {
     });
   }
 
+  /* recupera requisicao ativa, verifica se motorista esta
+   * atentendo alguma requisicao e envia para tela de corrida
+   */
+  _recuperaRequisicaoAtivaMotorista() async {
+    /** recupera os dados usuario logado **/
+    FirebaseUser firebaseUser = await UsuarioFirebse.getUsuarioAtual();
+    /** recupera requisicao ativa **/
+    DocumentSnapshot documentSnapshot = await banco
+        .collection(FirebaseCollection.COLECAO_REQUISICAO_ATIVA_MOTORISTA)
+        .document(firebaseUser.uid)
+        .get();
+
+    var dadosRequisicao = documentSnapshot.data;
+    if (dadosRequisicao == null) {
+      _adicionarListernerRequisicoes();
+    } else {
+      /** recupera a requisicao ativa **/
+      String idRequisicao =
+          dadosRequisicao[FirebaseCollection.DOC_ID_REQUISICAO];
+      Navigator.pushReplacementNamed(context, Rotas.ROTA_CORRIDA,
+          arguments: idRequisicao);
+    }
+  }
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _adicionarListernerRequisicoes();
+    _recuperaRequisicaoAtivaMotorista();
   }
 
   @override
@@ -111,34 +137,39 @@ class _PainelMotoristaState extends State<PainelMotorista> {
                 QuerySnapshot querySnapshot = snapshot.data;
                 if (querySnapshot.documents.length == 0) {
                   return mensagemDados;
-                }else{
+                } else {
                   return ListView.separated(
                       itemCount: querySnapshot.documents.length,
                       separatorBuilder: (context, index) => Divider(
-                        height: 2,
-                        color: Colors.grey,
-                      ),
-                    itemBuilder: (context, index){
-                        List<DocumentSnapshot> requisicoes = querySnapshot.documents.toList();
+                            height: 2,
+                            color: Colors.grey,
+                          ),
+                      itemBuilder: (context, index) {
+                        List<DocumentSnapshot> requisicoes =
+                            querySnapshot.documents.toList();
                         DocumentSnapshot item = requisicoes[index];
 
                         String idRequisicao = item['id'];
-                        String nomePassageiro = item[FirebaseCollection.NO_PASSAGEIRO][FirebaseCollection.DOC_NOME];
-                        String rua  = item[FirebaseCollection.NO_DESTINO][FirebaseCollection.DOC_RUA];
-                        String numero = item[FirebaseCollection.NO_DESTINO][FirebaseCollection.DOC_NUMERO];
-                        String cep = item[FirebaseCollection.NO_DESTINO][FirebaseCollection.DOC_CEP];
+                        String nomePassageiro =
+                            item[FirebaseCollection.NO_PASSAGEIRO]
+                                [FirebaseCollection.DOC_NOME];
+                        String rua = item[FirebaseCollection.NO_DESTINO]
+                            [FirebaseCollection.DOC_RUA];
+                        String numero = item[FirebaseCollection.NO_DESTINO]
+                            [FirebaseCollection.DOC_NUMERO];
+                        String cep = item[FirebaseCollection.NO_DESTINO]
+                            [FirebaseCollection.DOC_CEP];
 
                         return ListTile(
                           title: Text(nomePassageiro),
-                          subtitle:  Text("Destino: $cep, \n Rua: $rua,\n Número $numero"),
-                          onTap: (){
-                            Navigator.pushNamed(context,
-                                Rotas.ROTA_CORRIDA,
-                            arguments: idRequisicao);
+                          subtitle: Text(
+                              "Destino: $cep, \n Rua: $rua,\n Número $numero"),
+                          onTap: () {
+                            Navigator.pushNamed(context, Rotas.ROTA_CORRIDA,
+                                arguments: idRequisicao);
                           },
                         );
-                    }
-                  );
+                      });
                 }
               }
               break;

@@ -47,6 +47,9 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
   CameraPosition _cameraPosition =
       CameraPosition(target: LatLng(-15.904634, -47.773108), zoom: 19);
 
+  /** inicia localizao do passageiro **/
+  Position _localPassageiro;
+
   /** instancias do firebase **/
   FirebaseAuth auth = FirebaseAuth.instance;
   Firestore banco = Firestore.instance;
@@ -81,6 +84,7 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
         _exibirMarcadorPassageiro(position);
         _cameraPosition = CameraPosition(
             target: LatLng(position.latitude, position.longitude), zoom: 19);
+        _localPassageiro = position;
       }
       _movimentaCamera(_cameraPosition);
     });
@@ -104,6 +108,7 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
       _exibirMarcadorPassageiro(position);
       _cameraPosition = CameraPosition(
           target: LatLng(position.latitude, position.longitude), zoom: 19);
+      _localPassageiro = position;
       _movimentaCamera(_cameraPosition);
     });
   }
@@ -211,6 +216,8 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
   _salvarRequisicao(Destino destino) async {
     /** pega dados do usuario **/
     Usuario passageiro = await UsuarioFirebse.getDadosUsuarioLogado();
+    passageiro.latitude = _localPassageiro.latitude;
+    passageiro.longitude = _localPassageiro.longitude;
 
     /** monta requisicao de acordo com a model **/
     Requisicao requisicao = Requisicao();
@@ -260,6 +267,11 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
     });
   }
 
+  _statusACaminho() {
+    _exibirCaixaDeEndereco = false;
+    _alterarBotaoPrincipal('Motorista a Caminho', Colors.green, () {});
+  }
+
   /** monitora requisicoes da viagem **/
   _adicionarListernerParaRequisicao() async {
     FirebaseUser firebaseUser = await UsuarioFirebse.getUsuarioAtual();
@@ -280,6 +292,7 @@ class _PainelPassageiroState extends State<PainelPassageiro> {
             _statusAguardando();
             break;
           case StatusRequisicao.A_CAMINHO:
+            _statusACaminho();
             break;
           case StatusRequisicao.VIAGEM:
             break;
